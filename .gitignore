@@ -1,0 +1,25 @@
+# Virtual environment
+**/venv/
+**/.env
+
+# Python caches
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+**/.ruff_cache/
+**/htmlcov/
+**/.coverage
+
+# Database
+**/db.sqlite3
+
+# Node & Frontend
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Media & Videos
+*.webp
+docs/*.webp
+
