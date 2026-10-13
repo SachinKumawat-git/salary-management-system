@@ -1,0 +1,103 @@
+from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
+
+REFRESH_COOKIE = "refresh_token"
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            return Response({"detail": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        response = Response(
+            {
+                "access": access_token,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_hr_manager": user.groups.filter(name="HR Manager").exists(),
+                },
+            }
+        )
+        # Store refresh token in HttpOnly cookie
+        response.set_cookie(
+            key=REFRESH_COOKIE,
+            value=str(refresh),
+            httponly=True,
+            secure=False,  # Set True in production (HTTPS)
+            samesite="Lax",
+            max_age=7 * 24 * 60 * 60,  # 7 days in seconds
+            path="/api/auth/",
+        )
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Reads the refresh token from the HttpOnly cookie instead of the request body."""
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get(REFRESH_COOKIE) or request.data.get("refresh")
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        serializer = self.get_serializer(data={"refresh": refresh_token})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except (InvalidToken, TokenError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response_data = dict(serializer.validated_data)
+        new_refresh = response_data.pop("refresh", None)
+        response = Response(response_data, status=status.HTTP_200_OK)
+
+        # Rotate the cookie with the new refresh token if provided
+        if new_refresh:
+            response.set_cookie(
+                key=REFRESH_COOKIE,
+                value=new_refresh,
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=7 * 24 * 60 * 60,
+                path="/api/auth/",
+            )
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get(REFRESH_COOKIE)
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except (InvalidToken, TokenError):
+                pass  # Already invalid — that's fine
+
+        response = Response({"detail": "Logged out."}, status=status.HTTP_200_OK)
+        response.delete_cookie(REFRESH_COOKIE, path="/api/auth/")
+        return response
