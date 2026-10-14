@@ -27,11 +27,11 @@ services:
           name: salary-management-db
           property: connectionString
       - key: ALLOWED_HOSTS
-        value: ".onrender.com,localhost,127.0.0.1"
+        value: ".onrender.com,localhost,127.0.0.1,salary-management-backend-v9cs.onrender.com"
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://salary-management-frontend.onrender.com,http://localhost:5173,http://localhost:5174"
+        value: "https://salary-management-frontend-sbpk.onrender.com,http://localhost:5173,http://localhost:5174"
       - key: CSRF_TRUSTED_ORIGINS
-        value: "https://salary-management-frontend.onrender.com"
+        value: "https://salary-management-frontend-sbpk.onrender.com,https://salary-management-backend-v9cs.onrender.com"
 
   # Frontend Static Site (React 19 + Vite SPA)
   - type: web
@@ -42,7 +42,7 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        value: "https://salary-management-backend.onrender.com"
+        value: "https://salary-management-backend-v9cs.onrender.com"
     routes:
       - type: rewrite
         source: /*

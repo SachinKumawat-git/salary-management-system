@@ -108,5 +108,10 @@ class LogoutView(APIView):
                 pass  # Already invalid — that's fine
 
         response = Response({"detail": "Logged out."}, status=status.HTTP_200_OK)
-        response.delete_cookie(REFRESH_COOKIE, path="/api/auth/")
+        cookie_opts = get_refresh_cookie_options()
+        response.delete_cookie(
+            REFRESH_COOKIE,
+            path=cookie_opts.get("path", "/api/auth/"),
+            samesite=cookie_opts.get("samesite"),
+        )
         return response

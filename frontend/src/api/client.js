@@ -23,7 +23,9 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
-const rawBaseUrl = (import.meta.env.VITE_API_URL || '').trim()
+const defaultProductionApiUrl = 'https://salary-management-backend-v9cs.onrender.com'
+const fallbackUrl = import.meta.env.DEV ? '' : defaultProductionApiUrl
+const rawBaseUrl = (import.meta.env.VITE_API_URL || fallbackUrl).trim()
 const normalizedBaseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl
 
 export const apiClient = axios.create({

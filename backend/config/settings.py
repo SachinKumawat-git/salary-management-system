@@ -16,7 +16,7 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 # Hosts
 allowed_hosts_env = os.environ.get(
     "ALLOWED_HOSTS",
-    "localhost,127.0.0.1,testserver,.onrender.com",
+    "localhost,127.0.0.1,testserver,.onrender.com,salary-management-backend-v9cs.onrender.com",
 )
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",") if h.strip()]
 render_external_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
@@ -109,21 +109,40 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS
-cors_env = os.environ.get(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+cors_default = (
+    "https://salary-management-frontend-sbpk.onrender.com,"
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
 )
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+cors_env = os.environ.get("CORS_ALLOWED_ORIGINS", cors_default)
+CORS_ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/") for origin in cors_env.split(",") if origin.strip()
+]
 if os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False") == "True":
     CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True  # needed for HttpOnly cookie on refresh token
+CORS_PREFLIGHT_MAX_AGE = 86400
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # CSRF — required because refresh token is in a cookie
-csrf_env = os.environ.get(
-    "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+csrf_default = (
+    "https://salary-management-frontend-sbpk.onrender.com,"
+    "https://salary-management-backend-v9cs.onrender.com,"
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
 )
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_env.split(",") if origin.strip()]
+csrf_env = os.environ.get("CSRF_TRUSTED_ORIGINS", csrf_default)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip().rstrip("/") for origin in csrf_env.split(",") if origin.strip()
+]
 if render_external_hostname:
     CSRF_TRUSTED_ORIGINS.append(f"https://{render_external_hostname}")
 
