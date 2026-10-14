@@ -23,3 +23,7 @@
 *.webp
 docs/*.webp
 
+# Staticfiles
+staticfiles/
+**/staticfiles/
+

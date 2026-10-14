@@ -1,0 +1,51 @@
+databases:
+  - name: salary-management-db
+    databaseName: salary_management
+    user: salary_user
+    plan: free
+    region: oregon
+
+services:
+  # Backend Web Service (Django REST Framework)
+  - type: web
+    name: salary-management-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: salary-management-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://salary-management-frontend.onrender.com,http://localhost:5173,http://localhost:5174"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://salary-management-frontend.onrender.com"
+
+  # Frontend Static Site (React 19 + Vite SPA)
+  - type: web
+    name: salary-management-frontend
+    runtime: static
+    rootDir: frontend
+    plan: free
+    region: oregon
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: "https://salary-management-backend.onrender.com"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

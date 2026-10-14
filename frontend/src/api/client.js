@@ -23,8 +23,11 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
+const rawBaseUrl = (import.meta.env.VITE_API_URL || '').trim()
+const normalizedBaseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl
+
 export const apiClient = axios.create({
-  baseURL: '',
+  baseURL: normalizedBaseUrl || '',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -76,8 +79,11 @@ apiClient.interceptors.response.use(
       isRefreshing = true
 
       try {
+        const refreshUrl = normalizedBaseUrl
+          ? `${normalizedBaseUrl}/api/auth/refresh/`
+          : '/api/auth/refresh/'
         const refreshResponse = await axios.post(
-          '/api/auth/refresh/',
+          refreshUrl,
           {},
           { withCredentials: true }
         )

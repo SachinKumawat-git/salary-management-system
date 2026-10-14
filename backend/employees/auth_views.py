@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -9,6 +12,20 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 REFRESH_COOKIE = "refresh_token"
+
+
+def get_refresh_cookie_options():
+    cookie_secure = not settings.DEBUG
+    if "COOKIE_SECURE" in os.environ:
+        cookie_secure = os.environ.get("COOKIE_SECURE", "False") == "True"
+    cookie_samesite = os.environ.get("COOKIE_SAMESITE", "None" if cookie_secure else "Lax")
+    return {
+        "httponly": True,
+        "secure": cookie_secure,
+        "samesite": cookie_samesite,
+        "max_age": 7 * 24 * 60 * 60,  # 7 days in seconds
+        "path": "/api/auth/",
+    }
 
 
 class LoginView(APIView):
@@ -42,11 +59,7 @@ class LoginView(APIView):
         response.set_cookie(
             key=REFRESH_COOKIE,
             value=str(refresh),
-            httponly=True,
-            secure=False,  # Set True in production (HTTPS)
-            samesite="Lax",
-            max_age=7 * 24 * 60 * 60,  # 7 days in seconds
-            path="/api/auth/",
+            **get_refresh_cookie_options(),
         )
         return response
 
@@ -77,11 +90,7 @@ class CookieTokenRefreshView(TokenRefreshView):
             response.set_cookie(
                 key=REFRESH_COOKIE,
                 value=new_refresh,
-                httponly=True,
-                secure=False,
-                samesite="Lax",
-                max_age=7 * 24 * 60 * 60,
-                path="/api/auth/",
+                **get_refresh_cookie_options(),
             )
         return response
 
