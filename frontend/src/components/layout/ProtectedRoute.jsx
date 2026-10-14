@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
 
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading, setUnauthorizedModal, logout } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -17,6 +17,19 @@ export const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  if (user && !user.is_hr_manager && !user.is_admin) {
+    logout()
+    if (setUnauthorizedModal) {
+      setUnauthorizedModal({
+        isOpen: true,
+        username: user.username,
+        role: user.role || 'Employee',
+        message: 'You are not authorized for this portal. Access is restricted to HR Managers and Administrators.',
+      })
+    }
+    return <Navigate to="/login" replace />
   }
 
   return children

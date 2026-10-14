@@ -78,4 +78,52 @@ describe('LoginPage', () => {
       expect(screen.getByText(/Invalid credentials/i)).toBeInTheDocument()
     })
   })
+
+  it('shows unauthorized modal when non-HR role user attempts to log in', async () => {
+    authApi.loginApi.mockResolvedValueOnce({
+      access: 'fake-jwt-token',
+      user: {
+        id: 99,
+        username: 'regular_employee',
+        email: 'employee@company.com',
+        is_hr_manager: false,
+        is_admin: false,
+        role: 'Employee',
+      },
+    })
+
+    render(
+      <AuthProvider>
+        <BrowserRouter>
+          <LoginPage />
+        </BrowserRouter>
+      </AuthProvider>
+    )
+
+    const userInput = screen.getByPlaceholderText('Enter HR username')
+    const passInput = screen.getByPlaceholderText('••••••••••••')
+    const submitBtn = screen.getByRole('button', { name: /Sign In/i })
+
+    fireEvent.change(userInput, { target: { value: 'regular_employee' } })
+    fireEvent.change(passInput, { target: { value: 'mypassword' } })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText('Unauthorized Portal Access')).toBeInTheDocument()
+      expect(screen.getByText('regular_employee')).toBeInTheDocument()
+      expect(screen.getByText('Session Terminated')).toBeInTheDocument()
+    })
+
+    // Verify logout was triggered
+    expect(authApi.logoutApi).toHaveBeenCalled()
+
+    // Dismiss modal
+    const closeBtn = screen.getByRole('button', { name: /Acknowledge & Return to Sign In/i })
+    fireEvent.click(closeBtn)
+
+    await waitFor(() => {
+      expect(screen.queryByText('Unauthorized Portal Access')).not.toBeInTheDocument()
+    })
+  })
 })
+

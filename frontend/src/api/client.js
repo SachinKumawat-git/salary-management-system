@@ -104,6 +104,17 @@ apiClient.interceptors.response.use(
       }
     }
 
+    if (error.response?.status === 403) {
+      window.dispatchEvent(
+        new CustomEvent('auth:forbidden', {
+          detail: {
+            message: error.response?.data?.detail || 'You are not authorized for this portal.',
+          },
+        })
+      )
+    }
+
     return Promise.reject(error)
   }
 )
+

@@ -44,6 +44,10 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
+        is_hr_manager = user.groups.filter(name="HR Manager").exists()
+        is_admin = bool(user.is_staff or user.is_superuser)
+        is_authorized = is_hr_manager or is_admin
+
         response = Response(
             {
                 "access": access_token,
@@ -51,7 +55,9 @@ class LoginView(APIView):
                     "id": user.id,
                     "username": user.username,
                     "email": user.email,
-                    "is_hr_manager": user.groups.filter(name="HR Manager").exists(),
+                    "is_hr_manager": is_authorized,
+                    "is_admin": is_admin,
+                    "role": "Administrator" if is_admin else ("HR Manager" if is_hr_manager else "Employee"),
                 },
             }
         )
@@ -83,6 +89,28 @@ class CookieTokenRefreshView(TokenRefreshView):
 
         response_data = dict(serializer.validated_data)
         new_refresh = response_data.pop("refresh", None)
+
+        try:
+            token_obj = RefreshToken(refresh_token)
+            user_id = token_obj.payload.get("user_id")
+            from django.contrib.auth import get_user_model
+            user_model = get_user_model()
+            user = user_model.objects.filter(id=user_id).first()
+            if user:
+                is_hr_manager = user.groups.filter(name="HR Manager").exists()
+                is_admin = bool(user.is_staff or user.is_superuser)
+                is_authorized = is_hr_manager or is_admin
+                response_data["user"] = {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_hr_manager": is_authorized,
+                    "is_admin": is_admin,
+                    "role": "Administrator" if is_admin else ("HR Manager" if is_hr_manager else "Employee"),
+                }
+        except Exception:
+            pass
+
         response = Response(response_data, status=status.HTTP_200_OK)
 
         # Rotate the cookie with the new refresh token if provided

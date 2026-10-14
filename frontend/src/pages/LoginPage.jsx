@@ -32,12 +32,15 @@ export const LoginPage = () => {
       await login(data.username, data.password)
       navigate(from, { replace: true })
     } catch (err) {
-      if (err.response?.status === 429) {
+      if (err.code === 'UNAUTHORIZED_ROLE') {
+        // Handled via UnauthorizedModal popup in AuthContext
+        setAuthError('')
+      } else if (err.response?.status === 429) {
         setAuthError('Too many login attempts. Please wait a minute before trying again.')
       } else if (err.response?.status === 401) {
         setAuthError('Invalid credentials. Please verify your username and password.')
       } else {
-        setAuthError(err.response?.data?.detail || 'An error occurred during login. Please try again.')
+        setAuthError(err.response?.data?.detail || err.message || 'An error occurred during login. Please try again.')
       }
     } finally {
       setIsSubmitting(false)

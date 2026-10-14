@@ -66,7 +66,9 @@ export const Navbar = () => {
               {user?.username || 'HR Manager'}
             </span>
             <span className="text-slate-500">|</span>
-            <span className="text-indigo-400 font-semibold">HR Staff</span>
+            <span className={`font-semibold ${user?.is_admin ? 'text-amber-400' : 'text-indigo-400'}`}>
+              {user?.role || (user?.is_admin ? 'Administrator' : 'HR Staff')}
+            </span>
           </div>
 
           <button

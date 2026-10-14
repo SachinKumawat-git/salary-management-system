@@ -72,6 +72,35 @@ class TestLogin:
             {"username": "regular", "password": "testpass123!"},
             format="json",
         )
+        assert response.status_code == 200
+        assert response.data["user"]["is_hr_manager"] is False
+        assert response.data["user"]["is_admin"] is False
+        assert response.data["user"]["role"] == "Employee"
+
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
         response = client.get("/api/employees/")
         assert response.status_code == 403
+
+    def test_admin_user_allowed(self, db):
+        from django.contrib.auth.models import User
+
+        admin_user = User.objects.create_superuser(
+            username="admin_test",
+            password="adminpassword123!",
+            email="admin@test.com",
+        )
+        client = APIClient()
+        response = client.post(
+            "/api/auth/login/",
+            {"username": "admin_test", "password": "adminpassword123!"},
+            format="json",
+        )
+        assert response.status_code == 200
+        assert response.data["user"]["is_hr_manager"] is True
+        assert response.data["user"]["is_admin"] is True
+        assert response.data["user"]["role"] == "Administrator"
+
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
+        response = client.get("/api/employees/")
+        assert response.status_code == 200
+
