@@ -38,8 +38,6 @@ services:
     name: salary-management-frontend
     runtime: static
     rootDir: frontend
-    plan: free
-    region: oregon
     buildCommand: "npm install && npm run build"
     staticPublishPath: ./dist
     envVars:
